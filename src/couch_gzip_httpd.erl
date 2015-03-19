@@ -32,6 +32,9 @@ gzip(#httpd{mochi_req=MochiReq, method=Method}=Req) ->
     { {_,200,_}, Headers, Body} = Result,
 
     undefined = proplists:get_value("content-encoding", Headers),
+
+    true = compressible_type(proplists:get_value("content-type", Headers)),
+
     couch_httpd:send_response(
       Req, 200,
       Headers ++ [{"Content-encoding", "gzip"}],
@@ -64,3 +67,14 @@ identity(#httpd{mochi_req=MochiReq}=Req) ->
 
 path(#httpd{ mochi_req = MochiReq, path_parts = [ Handler | _ ] }) ->
   MochiReq:get(raw_path) -- ("/" ++ binary_to_list(Handler)).
+
+compressible_type(MimeType) ->
+  TypeExpList = re:split(
+    couch_config:get("attachments", "compressible_types", ""),
+    "\\s*,\\s*", [{return, list}]
+  ),
+  lists:any( fun(TypeExp) ->
+    Regexp = ["^\\s*", re:replace(TypeExp, "\\*", ".*"),
+    "(?:\\s*;.*?)?\\s*", $$],
+    re:run(MimeType, Regexp, [caseless]) =/= nomatch
+  end, [T || T <- TypeExpList, T /= []] ).
