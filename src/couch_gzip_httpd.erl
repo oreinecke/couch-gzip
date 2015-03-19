@@ -15,7 +15,6 @@ gzip(#httpd{mochi_req=MochiReq, method=Method}=Req) ->
 
     ["gzip"] = MochiReq:accepted_encodings(["gzip"]),
 
-
     {ok, Result} = httpc:request(
       list_to_atom(string:to_lower(atom_to_list(Method))),
       list_to_tuple([
