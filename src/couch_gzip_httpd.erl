@@ -15,14 +15,13 @@ gzip(#httpd{mochi_req=MochiReq, method=Method}=Req) ->
 
     ["gzip"] = MochiReq:accepted_encodings(["gzip"]),
 
-    "/_gzip" ++ Path = MochiReq:get(raw_path),
 
     {ok, Result} = httpc:request(
       list_to_atom(string:to_lower(atom_to_list(Method))),
       list_to_tuple([
         "http://"
           ++ couch_config:get("httpd", "bind_address") ++ ":"
-          ++ couch_config:get("httpd", "port") ++ Path,
+          ++ couch_config:get("httpd", "port") ++ path(Req),
         [ {atom_to_list(Field), Value} ||
           {Field, Value} <- mochiweb_headers:to_list(MochiReq:get(headers)), is_atom(Field) ]
       ] ++ case Method of
@@ -42,12 +41,10 @@ gzip(#httpd{mochi_req=MochiReq, method=Method}=Req) ->
 
 identity(#httpd{mochi_req=MochiReq}=Req) ->
 
-  "/_gzip" ++ Path = MochiReq:get(raw_path),
-
   MochiReq1 = mochiweb_request:new(
     MochiReq:get(socket),
     MochiReq:get(method),
-    Path,
+    path(Req),
     MochiReq:get(version),
     MochiReq:get(headers)
   ),
@@ -65,3 +62,6 @@ identity(#httpd{mochi_req=MochiReq}=Req) ->
     MochiReq1, DefaultFun, UrlHandlers,
     DbUrlHandlers, DesignUrlHandlers
   ).
+
+path(#httpd{ mochi_req = MochiReq, path_parts = [ Handler | _ ] }) ->
+  MochiReq:get(raw_path) -- ("/" ++ binary_to_list(Handler)).
