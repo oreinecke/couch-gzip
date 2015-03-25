@@ -8,7 +8,7 @@ handle_req(Req) ->
   try
     gzip(Req)
   catch
-    _:_-> identity(Req)
+    _:_ -> identity(Req)
   end.
 
 gzip(#httpd{mochi_req=MochiReq, method=Method}=Req) ->
